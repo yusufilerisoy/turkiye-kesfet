@@ -279,6 +279,20 @@
         grid-template-columns: repeat(2, 1fr) !important;
         gap: 8px !important;
       }
+      /* BackpackModal region row: İç Anadolu / Doğu Anadolu tek satıra sığsın */
+      [data-tk="backpack-region-row"] {
+        gap: 10px !important;
+        padding: 10px 12px !important;
+      }
+      [data-tk="backpack-region-badge"] { font-size: 22px !important; }
+      [data-tk="backpack-region-name"] {
+        font-size: 17px !important;
+        line-height: 1.1 !important;
+      }
+      [data-tk="backpack-region-detail"] { font-size: 11px !important; }
+      [data-tk="backpack-region-status"] {
+        font-size: 10px !important;
+      }
 
       /* AllJourneyModal */
       [data-tk="alljourney-modal"] {
@@ -3423,23 +3437,23 @@ const BackpackModal = ({ progress, onClose }) => {
     let detail = null;
     let statusBadge = null;
     if (status === "done") {
-      statusBadge = <span style={{ color: "var(--success)", fontWeight: 700 }}>✓ Tamamlandı</span>;
+      statusBadge = <span style={{ color: "var(--success)", fontWeight: 700, whiteSpace: "nowrap" }}>✓ Tamamlandı</span>;
       detail = `${completedCount}/3 görev · ${attemptsTotal} deneme${timeMin > 0 ? ` · ${timeMin} dk` : ""}`;
     } else if (status === "open") {
       if (completedCount > 0) {
-        statusBadge = <span style={{ color: "var(--accent)", fontWeight: 700 }}>● Devam ediyor</span>;
+        statusBadge = <span style={{ color: "var(--accent)", fontWeight: 700, whiteSpace: "nowrap" }}>● Devam</span>;
         detail = `${completedCount}/3 görev tamamlandı`;
       } else {
-        statusBadge = <span style={{ color: "var(--ink-soft)", fontWeight: 700 }}>○ Açık · henüz başlamadın</span>;
+        statusBadge = <span style={{ color: "var(--ink-soft)", fontWeight: 700, whiteSpace: "nowrap" }}>○ Açık</span>;
         detail = "Tıkla, keşfetmeye başla";
       }
     } else {
-      statusBadge = <span style={{ color: "var(--ink-mute)", fontWeight: 700 }}>🔒 Kilitli</span>;
+      statusBadge = <span style={{ color: "var(--ink-mute)", fontWeight: 700, whiteSpace: "nowrap" }}>🔒 Kilitli</span>;
       detail = "Önce diğer bölgeleri tamamla";
     }
 
     return (
-      <div style={{
+      <div data-tk="backpack-region-row" style={{
         display: "flex", alignItems: "center", gap: 14,
         padding: "12px 14px",
         background: "var(--bg-paper)",
@@ -3447,14 +3461,18 @@ const BackpackModal = ({ progress, onClose }) => {
         borderLeft: "5px solid " + (COLOR[region.id] || "#ccc"),
         boxShadow: "0 1px 2px rgba(62,39,35,.05)",
       }}>
-        <div style={{ fontSize: 26 }}>{region.badge}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{
+        <div data-tk="backpack-region-badge" style={{ fontSize: 26, flexShrink: 0 }}>{region.badge}</div>
+        <div data-tk="backpack-region-text" style={{ flex: 1, minWidth: 0 }}>
+          <div data-tk="backpack-region-name" style={{
             fontFamily: "var(--font-hand)", fontSize: 20, fontWeight: 700, color: "var(--ink)",
+            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
           }}>{region.name}</div>
-          <div style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{detail}</div>
+          <div data-tk="backpack-region-detail" style={{ fontSize: 12, color: "var(--ink-soft)", marginTop: 2 }}>{detail}</div>
         </div>
-        <div style={{ fontSize: 12, fontFamily: "var(--font-label)", textTransform: "uppercase", letterSpacing: ".06em" }}>
+        <div data-tk="backpack-region-status" style={{
+          fontSize: 12, fontFamily: "var(--font-label)", textTransform: "uppercase",
+          letterSpacing: ".06em", flexShrink: 0,
+        }}>
           {statusBadge}
         </div>
       </div>
