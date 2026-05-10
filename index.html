@@ -293,6 +293,19 @@
       [data-tk="backpack-region-status"] {
         font-size: 10px !important;
       }
+      /* MapMarkMission: harita çok büyük → mobilde 280px, padding daralt,
+         "Cevabı Kontrol Et" butonu görünür kalsın */
+      [data-tk="mapmark-card"] {
+        padding: 8px !important;
+        margin-top: 12px !important;
+      }
+      [data-tk="mapmark-card"] [data-tk="turkeymap-render"] {
+        height: 280px !important;
+      }
+      [data-tk="mapmark-selected"] {
+        margin-top: 10px !important;
+        font-size: 16px !important;
+      }
 
       /* AllJourneyModal */
       [data-tk="alljourney-modal"] {
@@ -3022,7 +3035,7 @@ const TurkeyMap = ({
   const hoveredSuffix = hoveredStatus === "locked" ? "  🔒" : (hoveredStatus === "done" ? "  ✓" : "");
 
   return (
-    <div style={{
+    <div data-tk="turkeymap-render" style={{
       position: "relative", width: "100%", height,
       borderRadius: 12, overflow: "hidden",
       border: "1.5px solid var(--rule)",
@@ -6890,7 +6903,7 @@ const MapMarkMission = ({ mission, selection, setSelection, locked }) => {
       }}>
         🗺 Haritada doğru bölgeye tıkla
       </div>
-      <div style={{
+      <div data-tk="mapmark-card" style={{
         marginTop: 18,
         padding: 16,
         borderRadius: 16,
@@ -6913,7 +6926,7 @@ const MapMarkMission = ({ mission, selection, setSelection, locked }) => {
         )}
       </div>
       {selection && (
-        <div style={{
+        <div data-tk="mapmark-selected" style={{
           marginTop: 14, textAlign: 'center',
           fontFamily: 'var(--font-hand)', fontSize: 18, color: 'var(--accent)', fontWeight: 700,
         }}>
