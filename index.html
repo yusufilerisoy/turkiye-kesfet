@@ -4624,6 +4624,15 @@ const teaserFor = (regionId) => {
   return MAP_TEASERS[regionId] || '';
 };
 
+/* Türkçe büyük ünlü uyumuna göre yer-bildirme eki: kalın ünlü → 'da, ince ünlü → 'de */
+const locativeSuffix = (name) => {
+  if (!name) return "'de";
+  const vowels = name.match(/[aeıioöuüAEIİOÖUÜ]/g);
+  if (!vowels || !vowels.length) return "'de";
+  const last = vowels[vowels.length - 1].toLowerCase();
+  return ['a', 'ı', 'o', 'u'].includes(last) ? "'da" : "'de";
+};
+
 const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllComplete, playerName: playerNameProp, earned: earnedProp, progress: progressMapProp, regionsProgress: regionsProgressProp, selectedRegion: selectedRegionProp }) => {
   // App'in progress instance'ı varsa onu kullan (tek doğruluk kaynağı).
   // Yoksa lokal fallback (legacy / standalone use için).
@@ -4704,12 +4713,15 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
   // regionsProgress: App'tan gelen prop'u kullan (yeni kayıtlar burada)
   const regionsProgress = regionsProgressProp || (progress.state && progress.state.regionsProgress) || {};
 
-  const headlineTitle = nextRegion
-    ? `Sıra ${nextRegion.name}'de`
+  // Headline: alttaki JourneyMap'te seçili bölgeyi takip etsin (ünlü uyumlu ek ile).
+  // Geçersizse nextRegion'a düş; o da yoksa "tüm bölgeler bitti" mesajı.
+  const headlineRegion = REGIONS.find(r => r.id === selectedRegion) || nextRegion;
+  const headlineTitle = headlineRegion
+    ? `Sıra ${headlineRegion.name}${locativeSuffix(headlineRegion.name)}`
     : 'Tüm açık bölgeleri keşfettin!';
 
-  const headlineTeaser = nextRegion
-    ? teaserFor(nextRegion.id)
+  const headlineTeaser = headlineRegion
+    ? teaserFor(headlineRegion.id)
     : (earned === 7
         ? '🏆 Final sınavına hazır mısın?'
         : '✨ Yeni bölgelerin açılması için bölgeleri tamamlamaya devam et');
