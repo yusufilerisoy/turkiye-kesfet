@@ -9,7 +9,7 @@
  * Sürüm değişince eski cache'ler temizlenir (CACHE_VERSION).
  */
 
-const CACHE_VERSION = 'tk-v1.2.0'; // pusula ikonu krem arka fon + safe-zone → cache invalidate
+const CACHE_VERSION = 'tk-v1.3.0'; // pusula ikonu köşelere kadar (-v2 isimleri) → cache invalidate
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const TILES_CACHE = `${CACHE_VERSION}-tiles`;
@@ -20,9 +20,9 @@ const APP_SHELL = [
   './index.html',
   './styles.css',
   './manifest.json',
-  './assets/icon-192.png',
-  './assets/icon-512.png',
-  './assets/apple-touch-icon.png',
+  './assets/icon-192-v2.png',
+  './assets/icon-512-v2.png',
+  './assets/apple-touch-icon-v2.png',
 ];
 
 /* ========== INSTALL — App shell'i pre-cache et ========== */
