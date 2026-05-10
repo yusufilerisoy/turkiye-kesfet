@@ -9,7 +9,7 @@
  * Sürüm değişince eski cache'ler temizlenir (CACHE_VERSION).
  */
 
-const CACHE_VERSION = 'tk-v1.3.0'; // pusula ikonu köşelere kadar (-v2 isimleri) → cache invalidate
+const CACHE_VERSION = 'tk-v1.4.0'; // cluster popup Detay chip + region intro byGrade + topic detail modal → cache invalidate
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const TILES_CACHE = `${CACHE_VERSION}-tiles`;
