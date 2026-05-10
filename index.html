@@ -138,10 +138,17 @@
       background: #F5F0E1;
     }
 
-    /* iOS safe-area desteği */
+    /* iOS safe-area desteği — body'i viewport'a kilitle, üst bar her zaman tepedede kalsın */
+    html {
+      height: -webkit-fill-available;
+    }
     body {
       padding-top: env(safe-area-inset-top, 0);
       padding-bottom: env(safe-area-inset-bottom, 0);
+      box-sizing: border-box;
+      margin: 0;
+      overflow: hidden; /* window-level scroll'u kapat — tüm scroll iç container'larda */
+      overscroll-behavior: none; /* iOS rubber-band scroll'u kapat */
     }
 
     /* ===========================================================
@@ -3070,7 +3077,6 @@ const TopBar = ({ name = "Maceracı", earned = 3, total = 7,
   const handle = (fn) => () => { closeMenu(); fn && fn(); };
   const menuItems = [
     { icon: "🪶", label: "Adımı Değiştir", fn: onChangeName },
-    { icon: "📜", label: "Yolculuğumu Yedekle", fn: onExport },
     { icon: "📖", label: "Hakkında", fn: onAbout },
     { icon: "🌱", label: "Yeniden Başla", fn: onReset, danger: true },
   ];
@@ -4947,7 +4953,10 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
 
   return (
     <div className="paper" style={{
-      height: '100vh',
+      // iOS dvh (URL bar dahil değil) + safe-area paddings çıkarıldı → her durumda tam fit.
+      // 100vh fallback eski tarayıcılar için.
+      height: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+      maxHeight: 'calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
       position: 'relative',
       overflow: 'hidden',
       fontFamily: 'var(--font-body)',
@@ -6555,10 +6564,13 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
   const [draggedRight, setDraggedRight] = useStateMission(null);
   const [hoveredLeft, setHoveredLeft] = useStateMission(null);
   const [pickedRight, setPickedRight] = useStateMission(null);
-  // Touch/pen drag (HTML5 drag-drop mobil tarayıcılarda çalışmaz)
+  // Native touch drag (HTML5 drag-drop iOS/Android'de çalışmaz; React onTouchMove
+  // passive:true forced — preventDefault çağıramıyoruz. Tek çare document-level
+  // native listener {passive:false} ile.)
   const dragRef = useRefMission({ active: false });
   const wasDraggingRef = useRefMission(false);
-  const [ghost, setGhost] = useStateMission(null); // { value, x, y } — sürükleme sırasında "hayalet" kart
+  const dropOnLeftRef = useRefMission(null); // güncel dropOnLeft için ref (listener stale closure'dan kaçınıyor)
+  const [ghost, setGhost] = useStateMission(null); // { value, x, y } — parmağı takip eden hayalet kart
 
   const usedRights = new Set(Object.values(sel));
 
@@ -6574,47 +6586,67 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
     return null;
   };
 
-  const handleOptionPointerDown = (e, value, blocked) => {
-    if (blocked) return;
-    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return; // mouse → HTML5 drag
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
-    dragRef.current = {
-      active: true, pointerId: e.pointerId, value,
-      startX: e.clientX, startY: e.clientY, hasMoved: false,
+  // Document-level touch listeners — mount'ta bir kez bağlanır, dropOnLeftRef
+  // üzerinden güncel state'e erişir.
+  useEffectMission(() => {
+    const onTouchMove = (e) => {
+      const d = dragRef.current;
+      if (!d.active) return;
+      let t = null;
+      for (let i = 0; i < e.touches.length; i++) {
+        if (e.touches[i].identifier === d.touchId) { t = e.touches[i]; break; }
+      }
+      if (!t) return;
+      const dx = t.clientX - d.startX, dy = t.clientY - d.startY;
+      if (!d.hasMoved && Math.hypot(dx, dy) > 8) {
+        d.hasMoved = true;
+        setDraggedRight(d.value);
+      }
+      if (d.hasMoved) {
+        e.preventDefault(); // KRİTİK: sayfa scroll'unu engelle (passive:false sayesinde işliyor)
+        setGhost({ value: d.value, x: t.clientX, y: t.clientY });
+        setHoveredLeft(findLiAtPoint(t.clientX, t.clientY));
+      }
     };
-  };
-
-  const handleOptionPointerMove = (e) => {
-    const d = dragRef.current;
-    if (!d.active || d.pointerId !== e.pointerId) return;
-    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
-    if (!d.hasMoved && Math.hypot(dx, dy) > 8) {
-      d.hasMoved = true;
-      setDraggedRight(d.value);
-    }
-    if (d.hasMoved) {
-      setGhost({ value: d.value, x: e.clientX, y: e.clientY });
-      setHoveredLeft(findLiAtPoint(e.clientX, e.clientY));
-    }
-  };
-
-  const handleOptionPointerUp = (e) => {
-    const d = dragRef.current;
-    if (!d.active || d.pointerId !== e.pointerId) return;
-    if (d.hasMoved) {
-      const dropLi = findLiAtPoint(e.clientX, e.clientY);
-      if (dropLi !== null && dropLi >= 0) {
-        dropOnLeft(dropLi, d.value);
-      } else {
+    const onTouchEnd = (e) => {
+      const d = dragRef.current;
+      if (!d.active) return;
+      let t = null;
+      for (let i = 0; i < (e.changedTouches || []).length; i++) {
+        if (e.changedTouches[i].identifier === d.touchId) { t = e.changedTouches[i]; break; }
+      }
+      if (d.hasMoved && t) {
+        const li = findLiAtPoint(t.clientX, t.clientY);
+        if (li !== null && li >= 0 && dropOnLeftRef.current) {
+          dropOnLeftRef.current(li, d.value);
+        }
         setDraggedRight(null);
         setHoveredLeft(null);
+        // Click event tap-fallback'i ardından gelirse pickedRight'ı toggle ETMESİN
+        wasDraggingRef.current = true;
+        setTimeout(() => { wasDraggingRef.current = false; }, 80);
       }
-      // tap'tan farkını koru: ardından click event'i synthetic gelirse pickedRight'ı toggle ETMESİN
-      wasDraggingRef.current = true;
-      setTimeout(() => { wasDraggingRef.current = false; }, 60);
-    }
-    setGhost(null);
-    dragRef.current = { active: false };
+      setGhost(null);
+      dragRef.current = { active: false };
+    };
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
+    document.addEventListener('touchcancel', onTouchEnd);
+    return () => {
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+      document.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, []);
+
+  const handleOptionTouchStart = (e, value, blocked) => {
+    if (blocked) return;
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    dragRef.current = {
+      active: true, touchId: t.identifier, value,
+      startX: t.clientX, startY: t.clientY, hasMoved: false,
+    };
   };
 
   const dropOnLeft = (leftIndex, rightValue) => {
@@ -6631,6 +6663,8 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
     setPickedRight(null);
     setGhost(null);
   };
+  // Listener'ların stale closure'dan kaçınması için her render'da güncel referansı sakla
+  dropOnLeftRef.current = dropOnLeft;
 
   const removeFromLeft = (leftIndex) => {
     if (locked) return;
@@ -6728,10 +6762,7 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
                 draggable={!blocked}
                 onDragStart={() => !used && setDraggedRight(r.value)}
                 onDragEnd={() => setDraggedRight(null)}
-                onPointerDown={(e) => handleOptionPointerDown(e, r.value, blocked)}
-                onPointerMove={handleOptionPointerMove}
-                onPointerUp={handleOptionPointerUp}
-                onPointerCancel={handleOptionPointerUp}
+                onTouchStart={(e) => handleOptionTouchStart(e, r.value, blocked)}
                 onClick={() => {
                   if (blocked) return;
                   if (wasDraggingRef.current) return; // sürükleme sonrası click'i bastır
