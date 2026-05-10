@@ -9,7 +9,7 @@
  * Sürüm değişince eski cache'ler temizlenir (CACHE_VERSION).
  */
 
-const CACHE_VERSION = 'tk-v1.0.0';
+const CACHE_VERSION = 'tk-v1.1.0'; // pusula ikonu güncellendi → cache invalidate
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const TILES_CACHE = `${CACHE_VERSION}-tiles`;
