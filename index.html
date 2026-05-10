@@ -3913,23 +3913,22 @@ const JourneyMap = ({ regionId, regionsProgress = {}, onCategorySelect }) => {
           return (
             <button
               key={c.id}
-              onClick={() => !isDone && onCategorySelect && onCategorySelect(region.id, c.id)}
-              disabled={isDone}
-              title={c.label + " · " + pct + "%"}
+              onClick={() => onCategorySelect && onCategorySelect(region.id, c.id)}
+              title={c.label + " · " + pct + "%" + (isDone ? " · tekrar oyna" : "")}
               style={{
                 display: "flex", flexDirection: "column", alignItems: "stretch", gap: 4,
                 padding: "10px 10px",
                 background: isDone ? "var(--bg-paper)" : "var(--bg-cream)",
                 border: "2px solid " + (isDone ? "var(--success)" : (correct > 0 ? fillColor : "var(--rule-soft)")),
                 borderRadius: 10,
-                cursor: isDone ? "default" : "pointer",
+                cursor: "pointer",
                 textAlign: "left",
                 fontFamily: "var(--font-body)",
-                opacity: isDone ? 0.85 : 1,
+                opacity: isDone ? 0.9 : 1,
                 transition: "all .15s",
                 position: "relative",
               }}
-              onMouseEnter={(e) => { if (!isDone) e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
               onMouseLeave={(e) => { e.currentTarget.style.transform = "translateY(0)"; }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 22, flexShrink: 0 }}>{c.emoji}</span>
@@ -4055,20 +4054,20 @@ const AllJourneyModal = ({ regionsProgress = {}, onClose, onCategorySelect }) =>
                       return (
                         <button
                           key={c.id}
-                          onClick={() => !isDone && onCategorySelect && onCategorySelect(r.id, c.id)}
-                          disabled={isDone}
+                          onClick={() => onCategorySelect && onCategorySelect(r.id, c.id)}
+                          title={isDone ? c.label + " · tekrar oyna" : c.label}
                           style={{
                             display: "flex", alignItems: "center", gap: 8,
                             padding: "6px 8px",
                             background: "transparent",
                             border: "1px solid " + (isDone ? "var(--success)" : "transparent"),
                             borderRadius: 6,
-                            cursor: isDone ? "default" : "pointer",
+                            cursor: "pointer",
                             textAlign: "left",
                             fontFamily: "var(--font-body)",
                             transition: "background .12s",
                           }}
-                          onMouseEnter={(e) => { if (!isDone) e.currentTarget.style.background = "rgba(184,134,47,.10)"; }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(184,134,47,.10)"; }}
                           onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}>
                           <span style={{ fontSize: 14, flexShrink: 0 }}>{c.emoji}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
