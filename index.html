@@ -889,7 +889,7 @@ const REGIONS_CONTENT_GRADED = {
         { type: "multi-select", question: "Karadeniz'de yetişen ürünlerden hangileridir?", options: ["Çay", "Fındık", "Pamuk", "Mısır", "Muz"], correct: [0, 1, 3], hint: "Pamuk Akdeniz/Güneydoğu, muz Akdeniz'dedir." },
         { type: "multi-select", question: "Karadeniz Bölgesi'nde yer alan şehirlerden hangileridir?", options: ["Trabzon", "Rize", "Konya", "Samsun", "İzmir"], correct: [0, 1, 3], hint: "Konya İç Anadolu, İzmir Ege'dedir." },
         { type: "multi-select", question: "Karadeniz'in özelliklerinden hangileri doğrudur?", options: ["Yağışlı iklim", "Gür ormanlar", "Çöl olması", "Dağlık arazi"], correct: [0, 1, 3], hint: "Çöl Karadeniz'de yoktur." },
-        { type: "drag-match", question: "Şehri ürünüyle eşleştir.", pairs: [ { left: "Rize", right: "Çay" }, { left: "Giresun", right: "Fındık" }, { left: "Trabzon", right: "Hamsi" }, { left: "Ordu", right: "Fındık" } ], hint: "Bölgenin ünlü ürünleri." },
+        { type: "drag-match", question: "Şehri ürünüyle eşleştir.", pairs: [ { left: "Rize", right: "Çay" }, { left: "Giresun", right: "Fındık" }, { left: "Trabzon", right: "Hamsi" }, { left: "Ordu", right: "Mısır" } ], hint: "Bölgenin ünlü ürünleri (Karadeniz'in 'Çay, fındık, mısır' üçlüsü)." },
         { type: "drag-match", question: "Karadeniz öğesini özelliğiyle eşleştir.", pairs: [ { left: "Yağmur", right: "Her mevsim yağar" }, { left: "Orman", right: "Yağışla beslenir" }, { left: "Hamsi", right: "Bölgenin balığı" }, { left: "Yayla", right: "Yaz aylarında çıkılır" } ], hint: "Her ifadenin Karadeniz ile bağlantısı var." },
         { type: "scenario", scenario: "Ayşe sabah uyandığında pencereden dışarı baktı. Yine sis ve yağmur vardı. Annesi bahçeden taze yapraklar topluyordu.", question: "Annesinin topladığı yapraklar hangi bitkidendir?", options: ["Zeytin", "Çay", "Tütün"], correct: 1, hint: "Yağışlı iklim çayı sever." },
         { type: "scenario", scenario: "Kerem yazın Trabzon'a gitti. Akrabaları onu bir yaylaya götürdü. Hava serindi, çiçekler her yerdeydi.", question: "Kerem'in çıktığı yer hangisidir?", options: ["Yayla", "Çöl", "Plaj"], correct: 0, hint: "Yaz aylarında çıkılan yüksek yerler." },
@@ -6555,8 +6555,67 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
   const [draggedRight, setDraggedRight] = useStateMission(null);
   const [hoveredLeft, setHoveredLeft] = useStateMission(null);
   const [pickedRight, setPickedRight] = useStateMission(null);
+  // Touch/pen drag (HTML5 drag-drop mobil tarayıcılarda çalışmaz)
+  const dragRef = useRefMission({ active: false });
+  const wasDraggingRef = useRefMission(false);
+  const [ghost, setGhost] = useStateMission(null); // { value, x, y } — sürükleme sırasında "hayalet" kart
 
   const usedRights = new Set(Object.values(sel));
+
+  const findLiAtPoint = (x, y) => {
+    const els = document.elementsFromPoint(x, y);
+    for (const el of els) {
+      const row = el.closest && el.closest('[data-tk="dragmatch-row"]');
+      if (row) {
+        const li = parseInt(row.getAttribute('data-li') || '-1', 10);
+        if (!isNaN(li) && li >= 0) return li;
+      }
+    }
+    return null;
+  };
+
+  const handleOptionPointerDown = (e, value, blocked) => {
+    if (blocked) return;
+    if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return; // mouse → HTML5 drag
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (err) {}
+    dragRef.current = {
+      active: true, pointerId: e.pointerId, value,
+      startX: e.clientX, startY: e.clientY, hasMoved: false,
+    };
+  };
+
+  const handleOptionPointerMove = (e) => {
+    const d = dragRef.current;
+    if (!d.active || d.pointerId !== e.pointerId) return;
+    const dx = e.clientX - d.startX, dy = e.clientY - d.startY;
+    if (!d.hasMoved && Math.hypot(dx, dy) > 8) {
+      d.hasMoved = true;
+      setDraggedRight(d.value);
+    }
+    if (d.hasMoved) {
+      setGhost({ value: d.value, x: e.clientX, y: e.clientY });
+      setHoveredLeft(findLiAtPoint(e.clientX, e.clientY));
+    }
+  };
+
+  const handleOptionPointerUp = (e) => {
+    const d = dragRef.current;
+    if (!d.active || d.pointerId !== e.pointerId) return;
+    if (d.hasMoved) {
+      const dropLi = findLiAtPoint(e.clientX, e.clientY);
+      if (dropLi !== null && dropLi >= 0) {
+        dropOnLeft(dropLi, d.value);
+      } else {
+        setDraggedRight(null);
+        setHoveredLeft(null);
+      }
+      // tap'tan farkını koru: ardından click event'i synthetic gelirse pickedRight'ı toggle ETMESİN
+      wasDraggingRef.current = true;
+      setTimeout(() => { wasDraggingRef.current = false; }, 60);
+    }
+    setGhost(null);
+    dragRef.current = { active: false };
+  };
 
   const dropOnLeft = (leftIndex, rightValue) => {
     if (locked) return;
@@ -6570,6 +6629,7 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
     setDraggedRight(null);
     setHoveredLeft(null);
     setPickedRight(null);
+    setGhost(null);
   };
 
   const removeFromLeft = (leftIndex) => {
@@ -6603,6 +6663,7 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
               <div
                 key={li}
                 data-tk="dragmatch-row"
+                data-li={li}
                 onDragOver={(e) => { if (!locked) { e.preventDefault(); setHoveredLeft(li); } }}
                 onDragLeave={() => setHoveredLeft(null)}
                 onDrop={(e) => { e.preventDefault(); dropOnLeft(li, draggedRight); }}
@@ -6659,15 +6720,21 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
           {rightItems.map((r, idx) => {
             const used = usedRights.has(r.value);
             const isPicked = pickedRight === r.value;
+            const blocked = locked || used;
             return (
               <div
                 key={idx}
                 data-tk="dragmatch-option"
-                draggable={!locked && !used}
+                draggable={!blocked}
                 onDragStart={() => !used && setDraggedRight(r.value)}
                 onDragEnd={() => setDraggedRight(null)}
+                onPointerDown={(e) => handleOptionPointerDown(e, r.value, blocked)}
+                onPointerMove={handleOptionPointerMove}
+                onPointerUp={handleOptionPointerUp}
+                onPointerCancel={handleOptionPointerUp}
                 onClick={() => {
-                  if (locked || used) return;
+                  if (blocked) return;
+                  if (wasDraggingRef.current) return; // sürükleme sonrası click'i bastır
                   setPickedRight(prev => prev === r.value ? null : r.value);
                 }}
                 style={{
@@ -6681,6 +6748,7 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
                   opacity: used ? 0.6 : 1,
                   transition: 'all .15s ease',
                   userSelect: 'none',
+                  touchAction: blocked ? 'auto' : 'none', // sürüklenebilir kartta touch scroll'u engelle
                 }}
               >
                 <span style={{ marginRight: 8, color: 'var(--ink-mute)' }}>⋮⋮</span>
@@ -6696,6 +6764,29 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
           })}
         </div>
       </div>
+
+      {/* Touch drag hayaleti — sadece sürükleme aktifken */}
+      {ghost && (
+        <div data-tk="dragmatch-ghost" style={{
+          position: 'fixed',
+          left: ghost.x, top: ghost.y,
+          transform: 'translate(-50%, -50%) rotate(-2deg)',
+          pointerEvents: 'none',
+          zIndex: 10000,
+          padding: '10px 14px',
+          background: '#FFF3E5',
+          border: '2px solid var(--accent)',
+          borderRadius: 12,
+          fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 700,
+          color: 'var(--ink)',
+          boxShadow: '0 8px 20px rgba(62,39,35,.35)',
+          maxWidth: '70vw',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          opacity: 0.95,
+        }}>
+          ⋮⋮ {ghost.value}
+        </div>
+      )}
     </div>
   );
 };
