@@ -2887,17 +2887,18 @@ const TurkeyMap = ({
           icon: lIcon, interactive: true, riseOnHover: true,
           _tkData: { ...ic, region }, _tkRegion: region,
         });
-        // Topic verisini JSON olarak butona göm — onclick window helper'ı tetikler
+        // Topic verisini data-attribute'a göm — document-level event delegation
+        // (inline onclick'te apostrof bozuluyordu, örn. "Türkiye'nin..." → SyntaxError)
         const topicJson = JSON.stringify({
           emoji: ic.emoji, label: ic.label, city: ic.city,
           desc: ic.desc, region: region,
-        }).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         const popupHtml = '<div style="text-align:center;min-width:160px;max-width:220px">' +
           '<div style="font-size:42px;line-height:1;margin-bottom:6px">' + ic.emoji + '</div>' +
           '<div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--title);line-height:1.1;margin-bottom:2px">' + ic.label + '</div>' +
           '<div style="font-family:var(--font-label);font-size:11px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">📍 ' + ic.city + '</div>' +
           '<div style="font-size:13px;line-height:1.45;color:var(--ink-soft);margin-bottom:10px">' + ic.desc + '</div>' +
-          '<button onclick="window.__tkOpenTopicDetail && window.__tkOpenTopicDetail(\'' + topicJson + '\')" ' +
+          '<button data-tk-topic-detail="' + topicJson + '" type="button" ' +
                   'style="font-family:var(--font-hand);font-size:14px;font-weight:700;background:var(--accent);color:#FFF7EB;' +
                   'border:2px solid var(--accent-ink, var(--accent));border-radius:999px;padding:7px 16px;cursor:pointer;' +
                   'box-shadow:0 2px 6px rgba(62,39,35,.18)">📖 Detay Öğren</button>' +
@@ -5171,14 +5172,22 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
   // === Topic detail modal (icon popup'undan açılan grade-aware bilgi) ===
   const [topicDetail, setTopicDetail] = useStateMap(null); // { emoji, label, city, desc, region }
   useEffectMap(() => {
-    // Leaflet popup HTML'inden butonun çağırdığı global helper
-    window.__tkOpenTopicDetail = (json) => {
+    // Document-level event delegation: Leaflet popup'ında data-tk-topic-detail
+    // attribute'lu butona click → JSON parse → modal'ı aç. Apostrof içeren
+    // topic'lerde inline onclick bozuluyordu; bu yöntem güvenli.
+    const handler = (e) => {
+      const btn = e.target && e.target.closest && e.target.closest('[data-tk-topic-detail]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
       try {
+        const json = btn.getAttribute('data-tk-topic-detail');
         const t = JSON.parse(json);
         if (t && t.label) setTopicDetail(t);
-      } catch (e) {}
+      } catch (err) { console.warn('[topic-detail parse]', err); }
     };
-    return () => { try { delete window.__tkOpenTopicDetail; } catch(e) { window.__tkOpenTopicDetail = undefined; } };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
   }, []);
   // Aktif sınıfı state'ten oku (RegionIntroScreen ile aynı pattern)
   const _detailGrade = (() => {
