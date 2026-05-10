@@ -248,14 +248,16 @@
         font-size: 18px !important;
       }
 
-      /* RegionIntro modal */
+      /* RegionIntro modal — iOS'ta scroll bölgesi düzgün davransın diye dvh + safe-area */
       [data-tk="region-intro-modal"] {
         max-width: 100% !important;
         width: calc(100% - 16px) !important;
-        max-height: calc(100vh - 16px) !important;
+        max-height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 16px) !important;
       }
       [data-tk="region-intro-content"] {
         padding: 14px 16px 18px !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior: contain !important;
       }
       [data-tk="region-intro-title"] { font-size: 32px !important; }
       [data-tk="region-intro-mission"] { font-size: 16px !important; }
@@ -5887,7 +5889,8 @@ const RegionIntroScreen = ({ regionId, onStartMission, onClose }) => {
              position: 'relative',
              maxWidth: 880,
              width: '100%',
-             maxHeight: 'calc(100vh - 32px)',
+             // iOS dvh (URL bar dahil değil) + safe-area çıkarımı — modal viewport'a sığsın, scroll iç container'da
+             maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 32px)',
              borderRadius: 22,
              overflow: 'hidden',
              border: '1.5px solid var(--rule)',
@@ -5920,7 +5923,14 @@ const RegionIntroScreen = ({ regionId, onStartMission, onClose }) => {
             height: 6, background: regionColor,
           }}/>
         </div>
-        <div data-tk="region-intro-content" style={{ padding: '22px 32px 26px', overflowY: 'auto', flex: 1, minHeight: 0 }}>
+        <div data-tk="region-intro-content" style={{
+          padding: '22px 32px 26px',
+          overflowY: 'auto',
+          flex: 1,
+          minHeight: 0,
+          WebkitOverflowScrolling: 'touch', // iOS momentum scroll
+          overscrollBehavior: 'contain',     // body'e scroll yayılmasın
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
             {Badge && <Badge region={safeId} size={72} label={null}/>}
             <div style={{ flex: 1, minWidth: 220 }}>
