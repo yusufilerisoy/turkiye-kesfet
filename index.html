@@ -3621,6 +3621,146 @@ const BackpackModal = ({ progress, onClose }) => {
 };
 
 
+/* ========== AppModal — native alert/prompt/confirm yerine app-styled dialog ==========
+   Props:
+     open       — bool
+     type       — "info" | "confirm" | "prompt"
+     icon       — emoji string (default tipine göre)
+     title      — header başlığı
+     body       — JSX/string (gövde içeriği)
+     defaultValue — prompt için input başlangıç değeri
+     inputPlaceholder
+     confirmLabel / cancelLabel — buton metinleri (default: tipine göre)
+     danger     — bool, kırmızı confirm butonu
+     onConfirm(value?) — onaylanınca; prompt'ta input değeri parametre olur
+     onCancel   — backdrop / ✕ / Vazgeç
+*/
+const AppModal = ({
+  open, type = "info",
+  icon, title, body,
+  defaultValue = "", inputPlaceholder,
+  confirmLabel, cancelLabel = "Vazgeç",
+  danger = false,
+  onConfirm, onCancel,
+}) => {
+  const [inputValue, setInputValue] = useStateLib(defaultValue || "");
+  useEffectLib(() => { if (open) setInputValue(defaultValue || ""); }, [open, defaultValue]);
+  if (!open) return null;
+
+  const defaultIcon = ({ info: "ℹ️", confirm: "⚠️", prompt: "✏️" })[type] || "ℹ️";
+  const defaultConfirm = ({ info: "Tamam", confirm: "Onayla", prompt: "Kaydet" })[type] || "Tamam";
+  const showCancel = type !== "info";
+
+  const handleConfirm = () => {
+    if (type === "prompt") onConfirm && onConfirm(inputValue);
+    else onConfirm && onConfirm();
+  };
+
+  const btnBase = {
+    padding: "10px 22px", borderRadius: 999,
+    fontFamily: "var(--font-hand)", fontSize: 17, fontWeight: 700,
+    cursor: "pointer", border: "2px solid",
+    transition: "all .15s",
+  };
+  const btnPrimary = {
+    ...btnBase, background: "var(--accent)", color: "#FFF7EB",
+    borderColor: "var(--accent-ink, var(--accent))",
+  };
+  const btnDanger = {
+    ...btnBase, background: "#C62828", color: "#FFF7EB",
+    borderColor: "#8B1F1F",
+  };
+  const btnSecondary = {
+    ...btnBase, background: "var(--bg-cream)", color: "var(--ink)",
+    borderColor: "var(--ink-mute)",
+  };
+
+  return (
+    <div onClick={onCancel} data-tk="appmodal-overlay" style={{
+      position: "fixed", inset: 0, zIndex: 9995,
+      background: "rgba(62,39,35,.55)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 24,
+    }}>
+      <div onClick={(e) => e.stopPropagation()} className="paper-cream" data-tk="appmodal-card" style={{
+        width: "100%", maxWidth: 520,
+        borderRadius: 18, overflow: "hidden",
+        border: "1.5px solid var(--rule)",
+        boxShadow: "0 16px 48px rgba(0,0,0,.45)",
+        background: "var(--bg-cream)",
+        display: "flex", flexDirection: "column",
+        maxHeight: "90vh",
+      }}>
+        {/* Header */}
+        <div style={{
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "16px 22px",
+          borderBottom: "1.5px dashed var(--rule)",
+          background: "linear-gradient(180deg, #FAF6EC 0%, #F1E9D2 100%)",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+            <span style={{ fontSize: 28, lineHeight: 1 }}>{icon || defaultIcon}</span>
+            <div data-tk="appmodal-title" style={{
+              fontFamily: "var(--font-display)", fontSize: 28, color: "var(--title)",
+              lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>{title}</div>
+          </div>
+          <button onClick={onCancel} aria-label="Kapat" style={{
+            width: 36, height: 36, borderRadius: "50%",
+            background: "var(--bg-cream)", border: "1.5px solid var(--ink-mute)",
+            cursor: "pointer", fontSize: 16, color: "var(--ink)", flexShrink: 0,
+          }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div data-tk="appmodal-body" style={{
+          padding: "20px 24px", overflowY: "auto",
+          fontFamily: "var(--font-body)", color: "var(--ink)",
+          fontSize: 15, lineHeight: 1.55,
+        }}>
+          {body}
+          {type === "prompt" && (
+            <input
+              autoFocus
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); handleConfirm(); }
+                else if (e.key === "Escape") { e.preventDefault(); onCancel && onCancel(); }
+              }}
+              placeholder={inputPlaceholder || ""}
+              style={{
+                width: "100%", marginTop: 14, boxSizing: "border-box",
+                padding: "12px 14px",
+                fontFamily: "var(--font-hand)", fontSize: 19,
+                background: "var(--bg-paper, #FFF7EB)",
+                border: "2px solid var(--rule)",
+                borderRadius: 10, color: "var(--ink)", outline: "none",
+              }}
+            />
+          )}
+        </div>
+
+        {/* Footer */}
+        <div data-tk="appmodal-footer" style={{
+          display: "flex", justifyContent: "flex-end", gap: 10,
+          padding: "14px 22px",
+          borderTop: "1.5px dashed var(--rule)",
+          background: "var(--bg-paper, #FFF7EB)",
+        }}>
+          {showCancel && (
+            <button onClick={onCancel} style={btnSecondary}>{cancelLabel}</button>
+          )}
+          <button onClick={handleConfirm} style={danger ? btnDanger : btnPrimary}>
+            {confirmLabel || defaultConfirm}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 /* ========== JourneyBar — Rozetlerim + ilerleme adımı ========== */
 const JourneyBar = ({ progressMap = {}, regionsProgress = {} }) => {
   const REGIONS = window.REGIONS || [];
@@ -4050,7 +4190,7 @@ Object.assign(window, { getMissionsForGame, getQuizForGame, resetGameOrder, rese
 
 Object.assign(window, {
   CornerOrnament, Sparkle, CompassRose, TurkeyMap, Badge, TopBar, Confetti, Logo,
-  RegionSceneKaradeniz, REGIONS, getRegion, TimerBar, BackpackModal, REGION_FILL_COLORS,
+  RegionSceneKaradeniz, REGIONS, getRegion, TimerBar, BackpackModal, AppModal, REGION_FILL_COLORS,
 });
   </script>
 
@@ -4662,12 +4802,26 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
   };
 
   // === Settings menu handlers ===
+  // App-styled modal state (native alert/prompt/confirm yerine)
+  const [appModal, setAppModal] = useStateMap(null);
+  const closeAppModal = () => setAppModal(null);
+
   const handleChangeName = () => {
-    const current = progress.state && progress.state.playerName || '';
-    const newName = window.prompt('Yeni adın:', current);
-    if (newName !== null && newName.trim()) {
-      progress.setPlayerName(newName.trim());
-    }
+    const current = (progress.state && progress.state.playerName) || '';
+    setAppModal({
+      type: 'prompt',
+      icon: '✏️',
+      title: 'Adımı Değiştir',
+      body: <div style={{ fontFamily: 'var(--font-hand)', fontSize: 17, color: 'var(--ink-soft)' }}>Yeni adını yaz, "Kaydet"e tıkla.</div>,
+      defaultValue: current,
+      inputPlaceholder: 'örn. Mehmet Ali',
+      confirmLabel: 'Kaydet',
+      onConfirm: (val) => {
+        const trimmed = (val || '').trim();
+        if (trimmed) progress.setPlayerName(trimmed);
+        closeAppModal();
+      },
+    });
   };
 
   const handleExport = () => {
@@ -4675,7 +4829,7 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
     const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const safeName = (progress.state && progress.state.playerName || 'oyuncu').replace(/[^\w-]/g, '_');
+    const safeName = ((progress.state && progress.state.playerName) || 'oyuncu').replace(/[^\w-]/g, '_');
     a.href = url;
     a.download = `turkiye-kesfet-${safeName}-${new Date().toISOString().slice(0,10)}.json`;
     document.body.appendChild(a); a.click(); a.remove();
@@ -4683,21 +4837,77 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
   };
 
   const handleAbout = () => {
-    window.alert(
-      "🇹🇷 Türkiye'yi Keşfet\n" +
-      "Bir Coğrafya Macerası\n\n" +
-      "Ortaokul (5–7. sınıf) öğrencileri için Türkiye'nin 7 coğrafi bölgesini öğreten oyun-tabanlı öğrenme uygulaması.\n\n" +
-      "📚 Pedagojik temel: Tasarım Temelli Araştırma (DBR), Gee (2003), Prensky (2001)\n" +
-      "🗺️ Harita: OpenStreetMap & CartoDB\n" +
-      "📊 81 il · 7 bölge · 21 mini görev · 15 quiz sorusu\n\n" +
-      "Eğitim için sevgiyle geliştirildi 💛"
-    );
+    setAppModal({
+      type: 'info',
+      icon: '🇹🇷',
+      title: 'Hakkında',
+      confirmLabel: 'Tamam',
+      body: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{
+            fontFamily: 'var(--font-display)', fontSize: 26, color: 'var(--title)',
+            lineHeight: 1.05, textAlign: 'center',
+          }}>
+            Türkiye'yi Keşfet
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-hand)', fontSize: 18, color: 'var(--ink-soft)',
+            textAlign: 'center', marginTop: -8,
+          }}>
+            ✨ Bir Coğrafya Macerası ✨
+          </div>
+          <div style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--ink)' }}>
+            Ortaokul (5–8. sınıf) öğrencileri için Türkiye'nin 7 coğrafi bölgesini öğreten oyun-tabanlı öğrenme uygulaması.
+          </div>
+          <div style={{
+            background: 'var(--bg-paper, #FFF7EB)', border: '1.5px solid var(--rule-soft)',
+            borderRadius: 10, padding: '12px 14px',
+            display: 'flex', flexDirection: 'column', gap: 6,
+            fontSize: 13.5, color: 'var(--ink-soft)',
+          }}>
+            <div><span style={{ marginRight: 8 }}>📚</span><b style={{ color: 'var(--ink)' }}>Pedagojik temel:</b> Tasarım Temelli Araştırma (DBR), Gee (2003), Prensky (2001)</div>
+            <div><span style={{ marginRight: 8 }}>🗺️</span><b style={{ color: 'var(--ink)' }}>Harita:</b> OpenStreetMap & CartoDB</div>
+            <div><span style={{ marginRight: 8 }}>📊</span><b style={{ color: 'var(--ink)' }}>İçerik:</b> 81 il · 7 bölge · 21 mini görev · 15 quiz sorusu</div>
+          </div>
+          <div style={{
+            fontFamily: 'var(--font-hand)', fontSize: 16, color: 'var(--accent)',
+            textAlign: 'center', marginTop: 4,
+          }}>
+            Eğitim için sevgiyle geliştirildi 💛
+          </div>
+        </div>
+      ),
+      onConfirm: closeAppModal,
+    });
   };
 
   const handleReset = () => {
-    if (!window.confirm('Tüm ilerlemeyi sıfırlamak istiyor musun?\n\nKazandığın rozetler ve quiz skoru silinecek. Bu işlem geri alınamaz.')) return;
-    if (progress.reset) progress.reset();
-    window.location.reload();
+    setAppModal({
+      type: 'confirm',
+      icon: '⚠️',
+      title: 'Yeniden Başla',
+      danger: true,
+      confirmLabel: '🔄 Sıfırla',
+      cancelLabel: 'Vazgeç',
+      body: (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{
+            fontFamily: 'var(--font-hand)', fontSize: 19, color: 'var(--title)',
+            lineHeight: 1.25,
+          }}>
+            Tüm ilerlemeyi sıfırlamak istiyor musun?
+          </div>
+          <div style={{ fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.5 }}>
+            Kazandığın rozetler, ilerleme kayıtları ve quiz skoru silinecek. <b style={{ color: 'var(--accent)' }}>Bu işlem geri alınamaz.</b>
+          </div>
+        </div>
+      ),
+      onConfirm: () => {
+        closeAppModal();
+        if (progress.reset) progress.reset();
+        window.location.reload();
+      },
+    });
   };
 
   // === Backpack modal ===
@@ -4761,6 +4971,13 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
       )}
       {backpackOpen && window.BackpackModal && (
         <window.BackpackModal progress={progress} onClose={() => setBackpackOpen(false)}/>
+      )}
+      {appModal && window.AppModal && (
+        <window.AppModal
+          open={true}
+          {...appModal}
+          onCancel={closeAppModal}
+        />
       )}
 
       {/* Header (flex-shrink) */}
