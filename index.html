@@ -3765,23 +3765,31 @@ const AppModal = ({
     else onConfirm && onConfirm();
   };
 
+  // App'in .btn-primary / .btn-secondary diliyle aynı: r-md köşeler, Quicksand,
+  // stamp shadow (0 2px 0 + 0 8px 18px) — hand-drawn paper aesthetic'le uyumlu.
   const btnBase = {
-    padding: "10px 22px", borderRadius: 999,
-    fontFamily: "var(--font-hand)", fontSize: 17, fontWeight: 700,
-    cursor: "pointer", border: "2px solid",
-    transition: "all .15s",
+    display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+    minHeight: 48, padding: "12px 22px",
+    borderRadius: "var(--r-md, 12px)",
+    fontFamily: "var(--font-body)", fontSize: 17, fontWeight: 700,
+    letterSpacing: ".2px",
+    cursor: "pointer", border: "1.5px solid transparent",
+    transition: "transform .15s ease-out, filter .15s ease-out, box-shadow .15s ease-out",
+    userSelect: "none",
   };
   const btnPrimary = {
-    ...btnBase, background: "var(--accent)", color: "#FFF7EB",
-    borderColor: "var(--accent-ink, var(--accent))",
+    ...btnBase,
+    background: "var(--accent)", color: "#FFF7EB",
+    borderColor: "var(--accent-ink)",
+    boxShadow: "0 2px 0 var(--accent-ink), 0 8px 18px rgba(198,40,40,.28)",
   };
-  const btnDanger = {
-    ...btnBase, background: "#C62828", color: "#FFF7EB",
-    borderColor: "#8B1F1F",
-  };
+  // Danger = primary; --accent zaten 'pusula kırmızısı'. Aynı stamp shadow.
+  const btnDanger = btnPrimary;
   const btnSecondary = {
-    ...btnBase, background: "var(--bg-cream)", color: "var(--ink)",
+    ...btnBase,
+    background: "var(--bg-cream)", color: "var(--title)",
     borderColor: "var(--ink-mute)",
+    boxShadow: "0 2px 0 rgba(140,117,103,.5)",
   };
 
   return (
