@@ -2887,11 +2887,20 @@ const TurkeyMap = ({
           icon: lIcon, interactive: true, riseOnHover: true,
           _tkData: { ...ic, region }, _tkRegion: region,
         });
+        // Topic verisini JSON olarak butona göm — onclick window helper'ı tetikler
+        const topicJson = JSON.stringify({
+          emoji: ic.emoji, label: ic.label, city: ic.city,
+          desc: ic.desc, region: region,
+        }).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
         const popupHtml = '<div style="text-align:center;min-width:160px;max-width:220px">' +
           '<div style="font-size:42px;line-height:1;margin-bottom:6px">' + ic.emoji + '</div>' +
           '<div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--title);line-height:1.1;margin-bottom:2px">' + ic.label + '</div>' +
           '<div style="font-family:var(--font-label);font-size:11px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">📍 ' + ic.city + '</div>' +
-          '<div style="font-size:13px;line-height:1.45;color:var(--ink-soft)">' + ic.desc + '</div>' +
+          '<div style="font-size:13px;line-height:1.45;color:var(--ink-soft);margin-bottom:10px">' + ic.desc + '</div>' +
+          '<button onclick="window.__tkOpenTopicDetail && window.__tkOpenTopicDetail(\'' + topicJson + '\')" ' +
+                  'style="font-family:var(--font-hand);font-size:14px;font-weight:700;background:var(--accent);color:#FFF7EB;' +
+                  'border:2px solid var(--accent-ink, var(--accent));border-radius:999px;padding:7px 16px;cursor:pointer;' +
+                  'box-shadow:0 2px 6px rgba(62,39,35,.18)">📖 Detay Öğren</button>' +
           '</div>';
         marker.bindPopup(popupHtml, { className: 'tk-region-popup', maxWidth: 240, closeButton: true });
         marker.bindTooltip(ic.label, { permanent: false, direction: 'top', offset: [0, -8] });
@@ -3846,6 +3855,168 @@ const AppModal = ({
 };
 
 
+/* ========== TopicDetailModal — icon popup'ından açılan grade-aware bilgi sayfası ==========
+   Props:
+     topic — { emoji, label, city, desc, region }
+     grade — 5 | 6 | 7 | 8
+     onClose
+   Görünüm: paper-cream modal + emoji + label + city + region + sınıfa göre çerçevelenmiş açıklama.
+   Sınıf çerçevelemesi:
+     5 — Bu nedir? (betimleyici)
+     6 — Nasıl oluştu / nasıl çalışır? (sebep-sonuç)
+     7 — İnsanlar için ne ifade eder? (ekonomik & kültürel)
+     8 — Sürdürülebilirlik & gelecek (sentez)
+*/
+const TopicDetailModal = ({ topic, grade = 5, onClose }) => {
+  if (!topic) return null;
+  const REGION_DISPLAY = {
+    marmara: 'Marmara', karadeniz: 'Karadeniz', ege: 'Ege',
+    icanadolu: 'İç Anadolu', akdeniz: 'Akdeniz',
+    doguanadolu: 'Doğu Anadolu', guneydogu: 'Güneydoğu Anadolu',
+  };
+  const FILL = {
+    marmara: '#64B5F6', karadeniz: '#81C784', ege: '#AED581',
+    icanadolu: '#FFE082', akdeniz: '#FFB74D',
+    doguanadolu: '#B39DDB', guneydogu: '#EF9A9A',
+  };
+  const FRAME = {
+    5: { hdr: '🔍 Bu Nedir?',
+         intro: 'Burası coğrafi bir özellik — keşfetmeye hazır mısın?',
+         curriculum: '5. sınıf · Bölgenin doğal ve beşerî özellikleri',
+         outro: 'Haritada gördüğün bu yer, bölgenin kimliğini oluşturan parçalardan biri.' },
+    6: { hdr: '🤔 Nasıl Oluştu, Nasıl Çalışır?',
+         intro: 'Bu yerin var olmasının arkasında coğrafi süreçler var.',
+         curriculum: '6. sınıf · Coğrafi süreçler ve sebep-sonuç',
+         outro: 'İklim, yer şekli ve insan etkileşimi bu özelliği şekillendirdi — birbirine bağlı süreçler.' },
+    7: { hdr: '💼 İnsanlar İçin Ne İfade Eder?',
+         intro: 'Bu yer ekonomik, kültürel ve sosyal hayatın bir parçası.',
+         curriculum: '7. sınıf · Ekonomi, ticaret ve kültür',
+         outro: 'Burada üretim, ticaret ya da turizm gibi insanın doğayla ilişkisinin somut izleri var.' },
+    8: { hdr: '🌱 Sürdürülebilirlik & Gelecek',
+         intro: 'Bu yer hem fırsatlar hem de zorluklar barındırır.',
+         curriculum: '8. sınıf · Sürdürülebilir kalkınma & çevre',
+         outro: 'Doğal kaynakları korumak ve nesilden nesile aktarmak için bilinçli kararlar gerekiyor.' },
+  };
+  const f = FRAME[grade] || FRAME[5];
+  const detailByGrade = topic.detailByGrade || null;
+  const customBody = detailByGrade && detailByGrade[grade];
+  const regionName = REGION_DISPLAY[topic.region] || topic.region || '';
+  const regionColor = FILL[topic.region] || '#999';
+
+  return (
+    <div onClick={onClose} data-tk="topic-detail-overlay" style={{
+      position: 'fixed', inset: 0, zIndex: 9996,
+      background: 'rgba(62,39,35,.55)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 20,
+    }}>
+      <div onClick={(e) => e.stopPropagation()} className="paper-cream" data-tk="topic-detail-card" style={{
+        width: '100%', maxWidth: 540,
+        borderRadius: 18, overflow: 'hidden',
+        border: '1.5px solid var(--rule)',
+        background: 'var(--bg-cream)',
+        boxShadow: '0 16px 48px rgba(0,0,0,.45)',
+        display: 'flex', flexDirection: 'column',
+        maxHeight: '90vh',
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 14,
+          padding: '18px 22px',
+          borderBottom: '1.5px dashed var(--rule)',
+          borderLeft: '8px solid ' + regionColor,
+          background: 'linear-gradient(180deg, #FAF6EC 0%, #F1E9D2 100%)',
+        }}>
+          <div style={{ fontSize: 44, lineHeight: 1, flexShrink: 0 }}>{topic.emoji}</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="t-label" style={{ fontSize: 10, color: 'var(--ink-mute)' }}>📍 {topic.city || '—'} · {regionName}</div>
+            <div data-tk="topic-detail-title" style={{
+              fontFamily: 'var(--font-display)', fontSize: 28, color: 'var(--title)',
+              lineHeight: 1.05, marginTop: 2,
+            }}>{topic.label}</div>
+          </div>
+          <button onClick={onClose} aria-label="Kapat" style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: 'var(--bg-cream)', border: '1.5px solid var(--ink-mute)',
+            cursor: 'pointer', fontSize: 16, color: 'var(--ink)', flexShrink: 0,
+          }}>✕</button>
+        </div>
+
+        {/* Body */}
+        <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1 }}>
+          {/* Curriculum link — küçük etiket */}
+          <div style={{
+            display: 'inline-block',
+            background: 'var(--bg-paper, #FFF7EB)', border: '1.5px solid var(--rule-soft, var(--rule))',
+            borderRadius: 999, padding: '4px 12px',
+            fontSize: 11, color: 'var(--ink-soft)', fontFamily: 'var(--font-label)',
+            textTransform: 'uppercase', letterSpacing: '.06em',
+            marginBottom: 14,
+          }}>
+            🎓 {f.curriculum}
+          </div>
+
+          {/* Grade frame heading */}
+          <div style={{
+            fontFamily: 'var(--font-hand)', fontSize: 22, fontWeight: 700,
+            color: 'var(--title)', lineHeight: 1.2, marginBottom: 6,
+          }}>
+            {f.hdr}
+          </div>
+
+          {/* Intro question/cue */}
+          <div style={{
+            fontFamily: 'var(--font-hand)', fontSize: 17, color: 'var(--ink-soft)',
+            marginBottom: 14, fontStyle: 'italic',
+          }}>
+            {f.intro}
+          </div>
+
+          {/* Body — custom override or topic.desc */}
+          <div style={{
+            fontFamily: 'var(--font-body)', fontSize: 15, color: 'var(--ink)',
+            lineHeight: 1.6, marginBottom: 16,
+            background: 'var(--bg-paper, #FFF7EB)',
+            border: '1.5px solid var(--rule-soft, var(--rule))', borderRadius: 12,
+            padding: '14px 16px',
+          }}>
+            {customBody || topic.desc || 'Bu yer hakkında bilgi yakında gelecek.'}
+          </div>
+
+          {/* Outro / synthesizing closing */}
+          <div style={{
+            display: 'flex', alignItems: 'flex-start', gap: 10,
+            background: '#FFF3E5',
+            border: '1.5px solid var(--accent)', borderRadius: 10,
+            padding: '12px 14px',
+            fontSize: 14, color: 'var(--ink)', lineHeight: 1.5,
+          }}>
+            <span style={{ fontSize: 18, lineHeight: 1.2, flexShrink: 0 }}>💡</span>
+            <div style={{ fontFamily: 'var(--font-body)' }}>{f.outro}</div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{
+          display: 'flex', justifyContent: 'flex-end', gap: 10,
+          padding: '14px 22px',
+          borderTop: '1.5px dashed var(--rule)',
+          background: 'var(--bg-paper, #FFF7EB)',
+        }}>
+          <button onClick={onClose} style={{
+            padding: '10px 24px', borderRadius: 999,
+            fontFamily: 'var(--font-hand)', fontSize: 17, fontWeight: 700,
+            background: 'var(--accent)', color: '#FFF7EB',
+            border: '2px solid var(--accent-ink, var(--accent))',
+            cursor: 'pointer',
+          }}>Anladım</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 /* ========== JourneyBar — Rozetlerim + ilerleme adımı ========== */
 const JourneyBar = ({ progressMap = {}, regionsProgress = {} }) => {
   const REGIONS = window.REGIONS || [];
@@ -4274,7 +4445,7 @@ Object.assign(window, { getMissionsForGame, getQuizForGame, resetGameOrder, rese
 
 Object.assign(window, {
   CornerOrnament, Sparkle, CompassRose, TurkeyMap, Badge, TopBar, Confetti, Logo,
-  RegionSceneKaradeniz, REGIONS, getRegion, TimerBar, BackpackModal, AppModal, REGION_FILL_COLORS,
+  RegionSceneKaradeniz, REGIONS, getRegion, TimerBar, BackpackModal, AppModal, TopicDetailModal, REGION_FILL_COLORS,
 });
   </script>
 
@@ -4997,6 +5168,29 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
   // === Backpack modal ===
   const [backpackOpen, setBackpackOpen] = useStateMap(false);
   const [allJourneyOpen, setAllJourneyOpen] = useStateMap(false);
+  // === Topic detail modal (icon popup'undan açılan grade-aware bilgi) ===
+  const [topicDetail, setTopicDetail] = useStateMap(null); // { emoji, label, city, desc, region }
+  useEffectMap(() => {
+    // Leaflet popup HTML'inden butonun çağırdığı global helper
+    window.__tkOpenTopicDetail = (json) => {
+      try {
+        const t = JSON.parse(json);
+        if (t && t.label) setTopicDetail(t);
+      } catch (e) {}
+    };
+    return () => { try { delete window.__tkOpenTopicDetail; } catch(e) { window.__tkOpenTopicDetail = undefined; } };
+  }, []);
+  // Aktif sınıfı state'ten oku (RegionIntroScreen ile aynı pattern)
+  const _detailGrade = (() => {
+    try {
+      const raw = localStorage.getItem('tk_state');
+      if (raw) {
+        const g = parseInt(JSON.parse(raw).grade, 10);
+        if (g >= 5 && g <= 8) return g;
+      }
+    } catch (e) {}
+    return 5;
+  })();
   // selectedRegion: App'tan gelen prop'u öncelikli kullan; lokal state sadece ilk render fallback'i
   const [localSelectedRegion, setLocalSelectedRegion] = useStateMap(selectedRegionProp || 'marmara');
   useEffectMap(() => {
@@ -5064,6 +5258,13 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
           open={true}
           {...appModal}
           onCancel={closeAppModal}
+        />
+      )}
+      {topicDetail && window.TopicDetailModal && (
+        <window.TopicDetailModal
+          topic={topicDetail}
+          grade={_detailGrade}
+          onClose={() => setTopicDetail(null)}
         />
       )}
 
