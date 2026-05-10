@@ -2,8 +2,20 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <title>Türkiye'yi Keşfet — Bir Coğrafya Macerası</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#5D2E2E" />
+  <meta name="application-name" content="Türkiye'yi Keşfet" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Türkiye'yi Keşfet" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png" />
+  <meta name="mobile-web-app-capable" content="yes" />
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -27,6 +39,93 @@
 
   <style>
     /* Yükleme placeholder'ı: #root boş kaldığında gösterilir */
+    
+
+    /* Mobile: butonları ortala (RegionIntro Göreve Başla + Mission Cevabı Kontrol Et) */
+    @media (max-width: 767px) {
+      [data-tk="region-intro-action"],
+      [data-tk="mission-action"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      [data-tk="region-intro-action"] > div,
+      [data-tk="mission-action"] > div {
+        width: 100% !important;
+        text-align: center !important;
+        display: flex !important;
+        justify-content: center !important;
+      }
+      [data-tk="region-intro-action"] > button,
+      [data-tk="mission-action"] > div > button {
+        width: 100% !important;
+        max-width: 320px !important;
+        margin: 0 auto !important;
+        align-self: center !important;
+      }
+      [data-tk="mission-action"] > div:last-child {
+        flex-direction: column !important;
+        gap: 6px !important;
+      }
+    }
+
+    /* Mobile: drag-match question — single column stack + compact */
+    @media (max-width: 767px) {
+      [data-tk="dragmatch-grid"] {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+        margin-top: 14px !important;
+      }
+      [data-tk="dragmatch-row"] {
+        padding: 10px 12px !important;
+        min-height: 54px !important;
+        gap: 10px !important;
+      }
+      [data-tk="dragmatch-row-left"] {
+        min-width: 0 !important;
+        max-width: 40% !important;
+        font-size: 16px !important;
+        line-height: 1.15 !important;
+      }
+      [data-tk="dragmatch-row-right"] {
+        font-size: 14px !important;
+        line-height: 1.25 !important;
+      }
+      [data-tk="dragmatch-row-right"] span {
+        font-size: 13px !important;
+      }
+      [data-tk="dragmatch-option"] {
+        padding: 10px 12px !important;
+        font-size: 14px !important;
+        line-height: 1.3 !important;
+      }
+      /* Picked-hint label uzun ve kayar — mobilde gizle, accent border zaten yeterli sinyal */
+      [data-tk="dragmatch-picked-hint"] {
+        display: none !important;
+      }
+      /* "Sağdaki kartları sürükle ya da tıkla…" yerine tap-flow odaklı metin için label'ı yeniden konumlama */
+      [data-tk="dragmatch-options"] .t-label,
+      [data-tk="dragmatch-rows"] .t-label {
+        font-size: 10px !important;
+        margin-bottom: -4px !important;
+      }
+    }
+
+    /* Mobil tap highlight + focus outline'ı kaldır (Leaflet polygon'larında çizgi bırakmasın) */
+    .leaflet-container,
+    .leaflet-container *,
+    .leaflet-interactive,
+    .leaflet-clickable {
+      -webkit-tap-highlight-color: transparent !important;
+    }
+    .leaflet-interactive:focus,
+    .leaflet-interactive:focus-visible,
+    .leaflet-marker-icon:focus,
+    .leaflet-container path:focus,
+    .leaflet-container *:focus {
+      outline: none !important;
+    }
+
     #root:empty::before {
       content: "Yükleniyor…";
       display: flex;
@@ -37,6 +136,190 @@
       font-size: 24px;
       color: #5D2E2E;
       background: #F5F0E1;
+    }
+
+    /* iOS safe-area desteği */
+    body {
+      padding-top: env(safe-area-inset-top, 0);
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+
+    /* ===========================================================
+       MOBİL RESPONSIVE — DESKTOP'I BOZMADAN MOBİLE OPTİMİZASYON
+       =========================================================== */
+
+    /* Tablet ve altı (< 1024px) — yatay padding'leri azalt */
+    @media (max-width: 1023px) {
+      .paper {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+      }
+    }
+
+    /* Mobile (< 768px) */
+    @media (max-width: 767px) {
+      /* TopBar: badges ve etiketleri küçült */
+      [data-tk="topbar"] {
+        padding: 8px 10px !important;
+        gap: 6px !important;
+        flex-wrap: nowrap !important;
+      }
+      [data-tk="topbar-rozetler"] { display: none !important; }
+      [data-tk="topbar-badges"] { gap: 3px !important; }
+      [data-tk="topbar-badges"] > div {
+        width: 22px !important;
+        height: 22px !important;
+        font-size: 10px !important;
+        border-width: 1.5px !important;
+      }
+      [data-tk="journey-button"] {
+        padding: 5px 8px !important;
+        font-size: 11px !important;
+      }
+      [data-tk="journey-button-text"] { display: none !important; }
+
+      /* Çantam alanı: sadece emoji */
+      [data-tk="chantam-name"] { display: none !important; }
+      [data-tk="chantam-label"] { display: none !important; }
+
+      /* Map sayfası: kenar padding'ler */
+      [data-tk="map-header"] {
+        padding: 8px 12px 0 !important;
+      }
+      [data-tk="map-headline"] { font-size: 22px !important; }
+      [data-tk="map-teaser"] {
+        font-size: 13px !important;
+        max-width: 100% !important;
+        text-align: left !important;
+      }
+      [data-tk="map-wrapper"] {
+        padding: 6px 8px !important;
+      }
+      [data-tk="map-card"] {
+        padding: 4px !important;
+      }
+
+      /* JourneyMap: alt — yatay scroll'a izin ver */
+      [data-tk="journey-map"] {
+        padding: 6px 10px 8px !important;
+      }
+      [data-tk="journey-map-grid"] {
+        grid-template-columns: repeat(5, minmax(110px, 1fr)) !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-snap-type: x mandatory !important;
+      }
+      [data-tk="journey-map-grid"] > button {
+        scroll-snap-align: start !important;
+        min-width: 110px !important;
+      }
+
+      /* Welcome: dikey istif, küçük margin */
+      [data-tk="welcome"] { padding: 16px !important; }
+      [data-tk="welcome-title"] { font-size: 56px !important; line-height: 0.9 !important; }
+      [data-tk="welcome-subtitle"] { font-size: 18px !important; }
+      [data-tk="welcome-card"] { max-width: 100% !important; padding: 14px !important; }
+      [data-tk="welcome-card"] p { font-size: 14px !important; line-height: 1.45 !important; }
+      [data-tk="welcome-row"] {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+      }
+      [data-tk="welcome-row"] > div { flex: 1 1 100% !important; }
+      [data-tk="welcome-grade-buttons"] button {
+        padding: 10px 4px !important;
+        font-size: 18px !important;
+      }
+
+      /* RegionIntro modal */
+      [data-tk="region-intro-modal"] {
+        max-width: 100% !important;
+        width: calc(100% - 16px) !important;
+        max-height: calc(100vh - 16px) !important;
+      }
+      [data-tk="region-intro-content"] {
+        padding: 14px 16px 18px !important;
+      }
+      [data-tk="region-intro-title"] { font-size: 32px !important; }
+      [data-tk="region-intro-mission"] { font-size: 16px !important; }
+      [data-tk="region-intro-facts"] {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+      }
+      [data-tk="region-intro-facts"] > div { padding: 8px 12px !important; }
+      [data-tk="region-intro-facts"] [class~="t-label"] { font-size: 10px !important; }
+
+      /* Mission ekranı */
+      [data-tk="mission"] { padding: 12px !important; }
+      [data-tk="mission-question"] { font-size: 22px !important; line-height: 1.3 !important; }
+      [data-tk="mission-options"] button { padding: 10px 12px !important; font-size: 15px !important; }
+      [data-tk="mission-options"] button > div:first-child { width: 26px !important; height: 26px !important; font-size: 13px !important; }
+      [data-tk="mission-progress"] > div { width: 22px !important; height: 22px !important; font-size: 12px !important; }
+      [data-tk="mission-back-btn"] { padding: 4px 8px !important; font-size: 12px !important; }
+
+      /* BackpackModal */
+      [data-tk="backpack-modal"] {
+        max-width: 100% !important;
+        width: calc(100% - 16px) !important;
+      }
+      [data-tk="backpack-stats"] {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 8px !important;
+      }
+
+      /* AllJourneyModal */
+      [data-tk="alljourney-modal"] {
+        max-width: 100% !important;
+        width: calc(100% - 16px) !important;
+        max-height: calc(100vh - 16px) !important;
+      }
+      [data-tk="alljourney-grid"] {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+
+      /* Quiz */
+      [data-tk="quiz-options"] {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+      [data-tk="quiz-question"] { font-size: 22px !important; }
+
+      /* BadgeCeremony */
+      [data-tk="badge-title"] { font-size: 56px !important; }
+      [data-tk="badge-subtitle"] { font-size: 22px !important; }
+
+      /* Final */
+      [data-tk="final-title"] { font-size: 52px !important; }
+      [data-tk="final-stats"] {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+
+      /* Logo küçült */
+      [data-tk="welcome"] svg { max-width: 200px !important; height: auto !important; }
+    }
+
+    /* Çok küçük ekranlar (< 380px) */
+    @media (max-width: 380px) {
+      [data-tk="welcome-title"] { font-size: 44px !important; }
+      [data-tk="map-headline"] { font-size: 18px !important; }
+      [data-tk="region-intro-title"] { font-size: 26px !important; }
+      [data-tk="mission-question"] { font-size: 18px !important; }
+    }
+
+    /* Yatay (landscape) mobile */
+    @media (max-width: 900px) and (orientation: landscape) and (max-height: 500px) {
+      [data-tk="welcome"] svg { max-width: 100px !important; height: auto !important; }
+      [data-tk="welcome-title"] { font-size: 36px !important; }
+      [data-tk="welcome-subtitle"] { font-size: 14px !important; }
+      [data-tk="welcome-card"] { margin-top: 8px !important; padding: 8px !important; }
+      [data-tk="welcome-card"] p { font-size: 12px !important; }
+    }
+
+    /* PWA standalone modunda safe-area */
+    @media (display-mode: standalone) {
+      body { user-select: none; -webkit-user-select: none; }
     }
   </style>
 </head>
@@ -2408,6 +2691,8 @@ const TurkeyMap = ({
   const topicMarkersRef = useRefLib([]);
   const topicClusterRef = useRefLib(null);
   const propsRef = useRefLib({ progress, onRegionClick, selectableRegions, hoverable });
+  const pathToRegionRef = useRefLib(new Map());
+  const touchHoverTimerRef = useRefLib(null);
   const [hovered, setHovered] = useStateLib(null);
 
   useEffectLib(() => {
@@ -2588,12 +2873,20 @@ const TurkeyMap = ({
         lyr.bindTooltip(`${provName} · ${REGION_DISPLAY_NAMES[region] || region}`, {
           sticky: true, direction: "top", offset: [0, -8], className: "tk-tooltip",
         });
+        // Mobile hover için path → { region, layer } mapping
+        setTimeout(() => {
+          if (lyr._path) pathToRegionRef.current.set(lyr._path, { region, layer: lyr });
+        }, 0);
         lyr.on("click", () => {
           const p = propsRef.current;
           if (!p.onRegionClick) return;
           const status = (p.progress || {})[region] || "open";
           const isSel = !p.selectableRegions || p.selectableRegions.indexOf(region) !== -1;
           if (status === "locked" || !isSel) return;
+          // Mobil için: hovered state'i temizle ki polygon highlight'ı kalmasın
+          setHovered(null);
+          // Leaflet path'in focus'unu kaldır (mobil tap highlight için)
+          try { if (lyr._path && typeof lyr._path.blur === 'function') lyr._path.blur(); } catch(e) {}
           p.onRegionClick(region);
         });
         lyr.on("mouseover", () => {
@@ -2606,6 +2899,62 @@ const TurkeyMap = ({
 
     layerRef.current = layer;
     mapRef.current = map;
+
+    // Mobile hover desteği: touch/pen ile sürüklerken bölge sınırını + il tooltip'ini desktop ile eşitle
+    const containerEl = map.getContainer();
+    let activeTooltipLayer = null;
+    const closeActiveTooltip = () => {
+      if (activeTooltipLayer && typeof activeTooltipLayer.closeTooltip === 'function') {
+        try { activeTooltipLayer.closeTooltip(); } catch(e) {}
+      }
+      activeTooltipLayer = null;
+    };
+    const onPointerMove = (e) => {
+      // Sadece touch/pen — mouse zaten Leaflet'in mouseover'ı ile çalışıyor
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+      const els = document.elementsFromPoint(e.clientX, e.clientY);
+      let foundRegion = null;
+      let foundLayer = null;
+      for (const el of els) {
+        if (el && el.tagName === 'path' && el.classList && el.classList.contains('leaflet-interactive')) {
+          const entry = pathToRegionRef.current.get(el);
+          if (entry) { foundRegion = entry.region; foundLayer = entry.layer; break; }
+        }
+      }
+      if (foundRegion !== hovered) setHovered(foundRegion);
+      // Tooltip parity (desktop bindTooltip 'Manisa · Ege' gibi gösterir)
+      if (foundLayer && foundLayer !== activeTooltipLayer) {
+        closeActiveTooltip();
+        try {
+          const rect = containerEl.getBoundingClientRect();
+          const cp = window.L.point(e.clientX - rect.left, e.clientY - rect.top);
+          const latlng = map.containerPointToLatLng(cp);
+          foundLayer.openTooltip(latlng);
+          activeTooltipLayer = foundLayer;
+        } catch(err) {}
+      } else if (!foundLayer) {
+        closeActiveTooltip();
+      }
+      // Otomatik temizleme timer'ı sıfırla
+      if (touchHoverTimerRef.current) {
+        clearTimeout(touchHoverTimerRef.current);
+        touchHoverTimerRef.current = null;
+      }
+    };
+    const onPointerEnd = (e) => {
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+      // Touch bitince kısa süre sonra hover + tooltip temizle
+      if (touchHoverTimerRef.current) clearTimeout(touchHoverTimerRef.current);
+      touchHoverTimerRef.current = setTimeout(() => {
+        setHovered(null);
+        closeActiveTooltip();
+        touchHoverTimerRef.current = null;
+      }, 1200);
+    };
+    containerEl.addEventListener('pointermove', onPointerMove, { passive: true });
+    containerEl.addEventListener('pointerup', onPointerEnd, { passive: true });
+    containerEl.addEventListener('pointercancel', onPointerEnd, { passive: true });
+    // Cleanup'a ekle: cleanup'ı return içinde yapacağız
     map.fitBounds(layer.getBounds(), { paddingTopLeft: [4, 50], paddingBottomRight: [4, 4] });
     map.setZoom(map.getZoom() + 0.1, { animate: false });
     refreshStatusMarkers();
@@ -2613,6 +2962,13 @@ const TurkeyMap = ({
     setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
+      try {
+        containerEl.removeEventListener('pointermove', onPointerMove);
+        containerEl.removeEventListener('pointerup', onPointerEnd);
+        containerEl.removeEventListener('pointercancel', onPointerEnd);
+      } catch (e) {}
+      if (touchHoverTimerRef.current) clearTimeout(touchHoverTimerRef.current);
+      pathToRegionRef.current.clear();
       map.remove();
       mapRef.current = null;
       layerRef.current = null;
@@ -2713,7 +3069,7 @@ const TopBar = ({ name = "Maceracı", earned = 3, total = 7,
     { icon: "🔄", label: "Yeniden Başla", fn: onReset, danger: true },
   ];
   return (
-  <div style={{
+  <div data-tk="topbar" style={{
     display: "flex", alignItems: "center", justifyContent: "space-between",
     padding: "14px 22px",
     background: "linear-gradient(180deg, #FAF6EC 0%, #F1E9D2 100%)",
@@ -2737,8 +3093,8 @@ const TopBar = ({ name = "Maceracı", earned = 3, total = 7,
       <div style={{ width: 42, height: 42, borderRadius: "50%", background: "var(--bg-cream)",
         border: "2px solid var(--gold)", display: "grid", placeItems: "center", fontSize: 22 }}>🎒</div>
       <div>
-        <div className="t-label" style={{ fontSize: 11 }}>Çantam</div>
-        <div style={{ fontFamily: "var(--font-hand)", fontSize: 20, fontWeight: 700, color: "var(--title)" }}>{name}</div>
+        <div className="t-label" data-tk="chantam-label" style={{ fontSize: 11 }}>Çantam</div>
+        <div data-tk="chantam-name" style={{ fontFamily: "var(--font-hand)", fontSize: 20, fontWeight: 700, color: "var(--title)" }}>{name}</div>
       </div>
     </div>
     <div style={{ flex: 1 }}/>
@@ -2747,7 +3103,7 @@ const TopBar = ({ name = "Maceracı", earned = 3, total = 7,
         const earnedCount = Object.keys(progressMap).filter(k => progressMap[k] === "done").length;
         const totalCount = (window.REGIONS || []).length;
         return (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, marginRight: 2 }}>
+          <div data-tk="topbar-rozetler" style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 1, marginRight: 2 }}>
             <div className="t-label" style={{ fontSize: 10 }}>Rozetlerim</div>
             <div style={{
               fontFamily: "var(--font-hand)", fontSize: 16, fontWeight: 700, color: "var(--title)",
@@ -2759,7 +3115,7 @@ const TopBar = ({ name = "Maceracı", earned = 3, total = 7,
           </div>
         );
       })()}
-      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+      <div data-tk="topbar-badges" style={{ display: "flex", gap: 6, alignItems: "center" }}>
         {progressMap && (window.REGIONS || []).map(r => {
           const isDone = progressMap[r.id] === "done";
           const fill = (window.REGION_FILL_COLORS || {})[r.id] || "#888";
@@ -2800,8 +3156,10 @@ const TopBar = ({ name = "Maceracı", earned = 3, total = 7,
       transition: "all .15s",
     }}
       onMouseEnter={(e) => { if (onJourneyClick) e.currentTarget.style.background = "rgba(184,134,47,.12)"; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-cream)"; }}>
-      🛤️ Yolculuk Haritam
+      onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-cream)"; }}
+      data-tk="journey-button"
+      title="Yolculuk Haritam">
+      🛤️<span data-tk="journey-button-text"> Yolculuk Haritam</span>
     </button>
     <div style={{ position: "relative" }}>
       <button onClick={() => setMenuOpen(o => !o)} style={{
@@ -3017,13 +3375,16 @@ const BackpackModal = ({ progress, onClose }) => {
 
   const StatCard = ({ icon, value, label, color }) => (
     <div style={{
-      background: "var(--bg-paper)", borderRadius: 12, padding: "14px 12px",
+      background: "var(--bg-paper)", borderRadius: 12, padding: "14px 8px",
       border: "1.5px solid var(--rule-soft)", textAlign: "center",
+      display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+      minWidth: 0, minHeight: 96,
     }}>
-      <div style={{ fontSize: 22 }}>{icon}</div>
+      <div style={{ fontSize: 22, lineHeight: 1 }}>{icon}</div>
       <div style={{
-        fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700,
-        color: color || "var(--title)", lineHeight: 1, marginTop: 4,
+        fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700,
+        color: color || "var(--title)", lineHeight: 1, marginTop: 6,
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%",
       }}>{value}</div>
       <div className="t-label" style={{ fontSize: 10, marginTop: 4 }}>{label}</div>
     </div>
@@ -3102,7 +3463,7 @@ const BackpackModal = ({ progress, onClose }) => {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 26 }}>🎒</span>
             <div>
-              <div className="t-label" style={{ fontSize: 11 }}>Çantam</div>
+              <div className="t-label" data-tk="chantam-label" style={{ fontSize: 11 }}>Çantam</div>
               <div style={{
                 fontFamily: "var(--font-display)", fontSize: 28, color: "var(--title)", lineHeight: 1,
               }}>Performansım</div>
@@ -3143,8 +3504,8 @@ const BackpackModal = ({ progress, onClose }) => {
 
           {/* Stats grid */}
           <div className="t-label" style={{ fontSize: 11, marginBottom: 8 }}>Genel Durum</div>
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 22,
+          <div data-tk="backpack-stats" style={{
+            display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10, marginBottom: 22,
           }}>
             <StatCard icon="🏆" value={`${earned}/7`} label="Rozet" color="var(--accent)"/>
             <StatCard icon="📋" value={`${totalMissionsCompleted}/21`} label="Görev"/>
@@ -3330,7 +3691,7 @@ const JourneyMap = ({ regionId, regionsProgress = {}, onCategorySelect }) => {
   const overallPct = cats.length ? Math.round((totalCorrect / (cats.length * 3)) * 100) : 0;
 
   return (
-    <div style={{
+    <div data-tk="journey-map" style={{
       flexShrink: 0,
       padding: "8px 24px 12px",
       background: "linear-gradient(180deg, transparent, rgba(241,233,210,.95) 30%)",
@@ -3343,7 +3704,7 @@ const JourneyMap = ({ regionId, regionsProgress = {}, onCategorySelect }) => {
           Bir kategori seçerek o sorulara odaklan →
         </div>
       </div>
-      <div style={{
+      <div data-tk="journey-map-grid" style={{
         display: "grid",
         gridTemplateColumns: "repeat(" + cats.length + ", minmax(0, 1fr))",
         gap: 8,
@@ -4036,7 +4397,7 @@ const WelcomeScreen = ({ onStart, hasSavedGame, progressInstance }) => {
   };
 
   return (
-    <div className="paper" style={{
+    <div className="paper" data-tk="welcome" style={{
       minHeight: '100vh',
       position: 'relative',
       overflow: 'hidden',
@@ -4073,7 +4434,7 @@ const WelcomeScreen = ({ onStart, hasSavedGame, progressInstance }) => {
             color: 'var(--title)',
             textShadow: '1px 2px 0 rgba(184,134,47,.18)',
             letterSpacing: '1px',
-          }}>
+          }} data-tk="welcome-title">
             Türkiye'yi Keşfet
           </div>
           <div style={{
@@ -4082,13 +4443,13 @@ const WelcomeScreen = ({ onStart, hasSavedGame, progressInstance }) => {
             color: 'var(--ink-soft)',
             fontStyle: 'italic',
             marginTop: 4,
-          }}>
+          }} data-tk="welcome-subtitle">
             ✦ Bir Coğrafya Macerası ✦
           </div>
         </div>
 
         {/* Hikâye / brief kartı */}
-        <div className="card deckle" style={{
+        <div className="card deckle" data-tk="welcome-card" style={{
           maxWidth: 640,
           marginTop: 28,
           position: 'relative',
@@ -4118,7 +4479,7 @@ const WelcomeScreen = ({ onStart, hasSavedGame, progressInstance }) => {
         </div>
 
         {/* İsim + Sınıf — yan yana */}
-        <div style={{
+        <div data-tk="welcome-row" style={{
           marginTop: 22,
           width: 560, maxWidth: '100%',
           display: 'flex',
@@ -4153,7 +4514,7 @@ const WelcomeScreen = ({ onStart, hasSavedGame, progressInstance }) => {
             >
               Hangi sınıftasın?
             </label>
-            <div style={{ display: 'flex', gap: 6 }}>
+            <div data-tk="welcome-grade-buttons" style={{ display: 'flex', gap: 6 }}>
               {[5, 6, 7, 8].map((g) => (
                 <button
                   key={g}
@@ -4385,7 +4746,7 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
       )}
 
       {/* Header (flex-shrink) */}
-      <div style={{ padding: '10px 56px 0', flexShrink: 0 }}>
+      <div data-tk="map-header" style={{ padding: '10px 56px 0', flexShrink: 0 }}>
         <div style={{
           display: 'flex',
           alignItems: 'baseline',
@@ -4400,7 +4761,7 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
               fontSize: 36,
               color: 'var(--title)',
               lineHeight: 1,
-            }}>
+            }} data-tk="map-headline">
               {headlineTitle}
             </div>
           </div>
@@ -4410,20 +4771,20 @@ const MapScreen = ({ progressInstance, onRegionClick, onCategorySelect, onAllCom
             color: 'var(--ink-soft)',
             maxWidth: 480,
             textAlign: 'right',
-          }}>
+          }} data-tk="map-teaser">
             {headlineTeaser}
           </div>
         </div>
       </div>
 
       {/* Map (flex 1 — fills remaining vertical space) */}
-      <div style={{
+      <div data-tk="map-wrapper" style={{
         padding: '8px 56px 6px',
         flex: 1,
         minHeight: 0,
         display: 'flex',
       }}>
-        <div style={{
+        <div data-tk="map-card" style={{
           flex: 1,
           minHeight: 0,
           padding: 8,
@@ -4960,6 +5321,7 @@ const RegionIntroScreen = ({ regionId, onStartMission, onClose }) => {
         pointerEvents: 'none',
       }}/>
       <div className="paper-cream deckle"
+           data-tk="region-intro-modal"
            role="dialog"
            aria-modal="true"
            aria-labelledby="region-intro-title"
@@ -5000,18 +5362,18 @@ const RegionIntroScreen = ({ regionId, onStartMission, onClose }) => {
             height: 6, background: regionColor,
           }}/>
         </div>
-        <div style={{ padding: '22px 32px 26px', overflowY: 'auto', flex: 1, minHeight: 0 }}>
+        <div data-tk="region-intro-content" style={{ padding: '22px 32px 26px', overflowY: 'auto', flex: 1, minHeight: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
             {Badge && <Badge region={safeId} size={72} label={null}/>}
             <div style={{ flex: 1, minWidth: 220 }}>
               <div className="t-label" style={{ fontSize: 11 }}>{orderLabel}</div>
-              <div id="region-intro-title" style={{
+              <div id="region-intro-title" data-tk="region-intro-title" style={{
                 fontFamily: 'var(--font-display)', fontSize: 52,
                 color: 'var(--title)', lineHeight: 1,
               }}>
                 {regionDisplayName}
               </div>
-              <div style={{
+              <div data-tk="region-intro-mission" style={{
                 fontFamily: 'var(--font-hand)', fontSize: 22,
                 color: regionColor, fontWeight: 700,
               }}>
@@ -5030,7 +5392,7 @@ const RegionIntroScreen = ({ regionId, onStartMission, onClose }) => {
             </div>
           )}
           {facts.length > 0 && (
-            <div style={{
+            <div data-tk="region-intro-facts" style={{
               marginTop: 22,
               display: 'grid',
               gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
@@ -5058,7 +5420,7 @@ const RegionIntroScreen = ({ regionId, onStartMission, onClose }) => {
               ))}
             </div>
           )}
-                    <div style={{
+                    <div data-tk="region-intro-action" style={{
             marginTop: 26,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             gap: 14, flexWrap: 'wrap',
@@ -5979,16 +6341,16 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
         marginTop: 12, fontFamily: 'var(--font-hand)', fontSize: 16,
         color: 'var(--ink-soft)', textAlign: 'center',
       }}>
-        ✋ Sağdaki kartları sürükle ya da tıkla, sonra solda bir satıra bırak/tıkla.
+        ✋ Bir kartı seç, sonra eşleştireceğin satıra dokun (ya da sürükle).
       </div>
 
-      <div style={{
+      <div data-tk="dragmatch-grid" style={{
         marginTop: 22,
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
         gap: 26,
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div data-tk="dragmatch-rows" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="t-label" style={{ fontSize: 11 }}>Eşleştirme Satırları</div>
           {leftItems.map((leftLabel, li) => {
             const dropped = sel[li];
@@ -5996,6 +6358,7 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
             return (
               <div
                 key={li}
+                data-tk="dragmatch-row"
                 onDragOver={(e) => { if (!locked) { e.preventDefault(); setHoveredLeft(li); } }}
                 onDragLeave={() => setHoveredLeft(null)}
                 onDrop={(e) => { e.preventDefault(); dropOnLeft(li, draggedRight); }}
@@ -6011,14 +6374,14 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
                   transition: 'background .15s, border-color .15s',
                 }}
               >
-                <div style={{
+                <div data-tk="dragmatch-row-left" style={{
                   flex: '0 0 auto',
                   fontFamily: 'var(--font-hand)', fontSize: 20, fontWeight: 700,
                   color: 'var(--title)', minWidth: 110,
                 }}>
                   {leftLabel}
                 </div>
-                <div style={{
+                <div data-tk="dragmatch-row-right" style={{
                   flex: 1,
                   fontFamily: 'var(--font-body)', fontSize: 16, color: 'var(--ink)',
                 }}>
@@ -6047,7 +6410,7 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
           })}
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div data-tk="dragmatch-options" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div className="t-label" style={{ fontSize: 11 }}>Seçenekler</div>
           {rightItems.map((r, idx) => {
             const used = usedRights.has(r.value);
@@ -6055,6 +6418,7 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
             return (
               <div
                 key={idx}
+                data-tk="dragmatch-option"
                 draggable={!locked && !used}
                 onDragStart={() => !used && setDraggedRight(r.value)}
                 onDragEnd={() => setDraggedRight(null)}
@@ -6078,7 +6442,7 @@ const DragMatchMission = ({ mission, selection, setSelection, locked }) => {
                 <span style={{ marginRight: 8, color: 'var(--ink-mute)' }}>⋮⋮</span>
                 {r.value}
                 {isPicked && !used && (
-                  <span style={{
+                  <span data-tk="dragmatch-picked-hint" style={{
                     marginLeft: 10, fontFamily: 'var(--font-hand)',
                     color: 'var(--accent)', fontWeight: 700,
                   }}>← şimdi solda bir satıra tıkla</span>
@@ -6495,7 +6859,7 @@ const MissionScreen = ({ regionId, categoryId, missionIndex = 0, onMissionComple
           </div>
         )}
 
-        <div style={{
+        <div data-tk="mission-action" style={{
           marginTop: 24,
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           gap: 14, flexWrap: 'wrap',
@@ -6848,6 +7212,41 @@ const App = () => {
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+
+  <!-- ============================================================
+       PWA: Service Worker registration
+       (file:// protokolünde çalışmaz; HTTPS / localhost gerekir.)
+       ============================================================ -->
+  <script>
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js', { scope: './' })
+          .then((reg) => {
+            console.log('[PWA] Service Worker registered:', reg.scope);
+            // Yeni SW'yi otomatik aktive et
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (newWorker) {
+                newWorker.addEventListener('statechange', () => {
+                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    newWorker.postMessage('SKIP_WAITING');
+                  }
+                });
+              }
+            });
+          })
+          .catch((err) => console.warn('[PWA] SW registration failed:', err));
+
+        // SW kontrolör değişince sayfayı sessizce yenile
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (refreshing) return;
+          refreshing = true;
+          window.location.reload();
+        });
+      });
+    }
   </script>
 </body>
 </html>

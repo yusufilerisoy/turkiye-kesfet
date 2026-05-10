@@ -1231,6 +1231,8 @@ const TurkeyMap = ({
   const topicMarkersRef = useRefLib([]);
   const topicClusterRef = useRefLib(null);
   const propsRef = useRefLib({ progress, onRegionClick, selectableRegions, hoverable });
+  const pathToRegionRef = useRefLib(new Map());
+  const touchHoverTimerRef = useRefLib(null);
   const [hovered, setHovered] = useStateLib(null);
 
   useEffectLib(() => {
@@ -1409,12 +1411,20 @@ const TurkeyMap = ({
         lyr.bindTooltip(`${provName} · ${REGION_DISPLAY_NAMES[region] || region}`, {
           sticky: true, direction: "top", offset: [0, -8], className: "tk-tooltip",
         });
+        // Mobile hover için path → region mapping
+        setTimeout(() => {
+          if (lyr._path) pathToRegionRef.current.set(lyr._path, region);
+        }, 0);
         lyr.on("click", () => {
           const p = propsRef.current;
           if (!p.onRegionClick) return;
           const status = (p.progress || {})[region] || "open";
           const isSel = !p.selectableRegions || p.selectableRegions.indexOf(region) !== -1;
           if (status === "locked" || !isSel) return;
+          // Mobil için: hovered state'i temizle ki polygon highlight'ı kalmasın
+          setHovered(null);
+          // Leaflet path'in focus'unu kaldır (mobil tap highlight için)
+          try { if (lyr._path && typeof lyr._path.blur === 'function') lyr._path.blur(); } catch(e) {}
           p.onRegionClick(region);
         });
         lyr.on("mouseover", () => {
@@ -1427,6 +1437,40 @@ const TurkeyMap = ({
 
     layerRef.current = layer;
     mapRef.current = map;
+
+    // Mobile hover desteği: touch/pen ile sürüklerken bölge sınırını belirginleştir
+    const containerEl = map.getContainer();
+    const onPointerMove = (e) => {
+      // Sadece touch/pen — mouse zaten Leaflet'in mouseover'ı ile çalışıyor
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+      const els = document.elementsFromPoint(e.clientX, e.clientY);
+      let foundRegion = null;
+      for (const el of els) {
+        if (el && el.tagName === 'path' && el.classList && el.classList.contains('leaflet-interactive')) {
+          const r = pathToRegionRef.current.get(el);
+          if (r) { foundRegion = r; break; }
+        }
+      }
+      if (foundRegion !== hovered) setHovered(foundRegion);
+      // Otomatik temizleme timer'ı sıfırla
+      if (touchHoverTimerRef.current) {
+        clearTimeout(touchHoverTimerRef.current);
+        touchHoverTimerRef.current = null;
+      }
+    };
+    const onPointerEnd = (e) => {
+      if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+      // Touch bitince kısa süre sonra hover temizle
+      if (touchHoverTimerRef.current) clearTimeout(touchHoverTimerRef.current);
+      touchHoverTimerRef.current = setTimeout(() => {
+        setHovered(null);
+        touchHoverTimerRef.current = null;
+      }, 1200);
+    };
+    containerEl.addEventListener('pointermove', onPointerMove, { passive: true });
+    containerEl.addEventListener('pointerup', onPointerEnd, { passive: true });
+    containerEl.addEventListener('pointercancel', onPointerEnd, { passive: true });
+    // Cleanup'a ekle: cleanup'ı return içinde yapacağız
     map.fitBounds(layer.getBounds(), { paddingTopLeft: [4, 50], paddingBottomRight: [4, 4] });
     map.setZoom(map.getZoom() + 0.1, { animate: false });
     refreshStatusMarkers();
@@ -1434,6 +1478,13 @@ const TurkeyMap = ({
     setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
+      try {
+        containerEl.removeEventListener('pointermove', onPointerMove);
+        containerEl.removeEventListener('pointerup', onPointerEnd);
+        containerEl.removeEventListener('pointercancel', onPointerEnd);
+      } catch (e) {}
+      if (touchHoverTimerRef.current) clearTimeout(touchHoverTimerRef.current);
+      pathToRegionRef.current.clear();
       map.remove();
       mapRef.current = null;
       layerRef.current = null;
@@ -1843,13 +1894,16 @@ const BackpackModal = ({ progress, onClose }) => {
 
   const StatCard = ({ icon, value, label, color }) => (
     <div style={{
-      background: "var(--bg-paper)", borderRadius: 12, padding: "14px 12px",
+      background: "var(--bg-paper)", borderRadius: 12, padding: "14px 8px",
       border: "1.5px solid var(--rule-soft)", textAlign: "center",
+      display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
+      minWidth: 0, minHeight: 96,
     }}>
-      <div style={{ fontSize: 22 }}>{icon}</div>
+      <div style={{ fontSize: 22, lineHeight: 1 }}>{icon}</div>
       <div style={{
-        fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700,
-        color: color || "var(--title)", lineHeight: 1, marginTop: 4,
+        fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 700,
+        color: color || "var(--title)", lineHeight: 1, marginTop: 6,
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "100%",
       }}>{value}</div>
       <div className="t-label" style={{ fontSize: 10, marginTop: 4 }}>{label}</div>
     </div>
@@ -1969,8 +2023,8 @@ const BackpackModal = ({ progress, onClose }) => {
 
           {/* Stats grid */}
           <div className="t-label" style={{ fontSize: 11, marginBottom: 8 }}>Genel Durum</div>
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 22,
+          <div data-tk="backpack-stats" style={{
+            display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 10, marginBottom: 22,
           }}>
             <StatCard icon="🏆" value={`${earned}/7`} label="Rozet" color="var(--accent)"/>
             <StatCard icon="📋" value={`${totalMissionsCompleted}/21`} label="Görev"/>
