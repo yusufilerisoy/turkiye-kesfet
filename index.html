@@ -2854,14 +2854,23 @@ const TurkeyMap = ({
       const header = '<div style="font-family:var(--font-display);font-size:18px;color:var(--title);margin-bottom:10px;text-align:center;border-bottom:1.5px dashed var(--rule);padding-bottom:8px">📍 Bu yakınlıkta ' + items.length + ' yer</div>';
       const list = items.map(it => {
         const regColor = REGION_FILL_COLORS[it.region] || "var(--accent)";
-        return '<div style="display:flex;gap:10px;padding:9px 10px;background:var(--bg-paper);border-radius:8px;margin-bottom:5px;border-left:3px solid ' + regColor + '">' +
+        // Topic JSON'u data-attribute olarak göm; document-level delegation handler
+        // (MapScreen useEffect) [data-tk-topic-detail]'i yakalayıp modal açar.
+        const itJson = JSON.stringify({
+          emoji: it.emoji, label: it.label, city: it.city,
+          desc: it.desc, region: it.region,
+        }).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return '<button type="button" data-tk-topic-detail="' + itJson + '" ' +
+          'style="display:flex;width:100%;text-align:left;gap:10px;padding:9px 10px;background:var(--bg-paper);border-radius:8px;margin-bottom:5px;border:none;border-left:3px solid ' + regColor + ';cursor:pointer;font-family:inherit" ' +
+          'onmouseenter="this.style.background=\'#FFF3E5\'" onmouseleave="this.style.background=\'var(--bg-paper)\'">' +
           '<div style="font-size:24px;flex-shrink:0;line-height:1.2">' + it.emoji + '</div>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-family:var(--font-hand);font-weight:700;font-size:14px;color:var(--title);line-height:1.15;margin-bottom:1px">' + it.label + '</div>' +
             '<div style="font-size:9px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">📍 ' + it.city + '</div>' +
-            '<div style="font-size:11px;line-height:1.35;color:var(--ink-soft)">' + it.desc + '</div>' +
+            '<div style="font-size:11px;line-height:1.35;color:var(--ink-soft);margin-bottom:4px">' + it.desc + '</div>' +
+            '<div style="font-size:11px;color:var(--accent);font-weight:700;font-family:var(--font-hand)">📖 Detay Öğren →</div>' +
           '</div>' +
-        '</div>';
+        '</button>';
       }).join('');
       const html = '<div style="min-width:250px;max-width:300px;max-height:320px;overflow-y:auto">' + header + list + '</div>';
       window.L.popup({ className: 'tk-region-popup', maxWidth: 320, autoPan: true })
