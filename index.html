@@ -138,7 +138,10 @@
       background: #F5F0E1;
     }
 
-    /* iOS safe-area desteği — body'i viewport'a kilitle, üst bar her zaman tepedede kalsın */
+    /* iOS safe-area desteği. Body scroll AÇIK kalmalı (Mission/Welcome ekranları
+       içerikleri viewport'tan uzun olabilir, dikey scroll gerekiyor).
+       Window-level scroll'u kapatma sadece MapScreen'in kendi 'overflow: hidden'
+       inline style'ı ile sınırlı. */
     html {
       height: -webkit-fill-available;
     }
@@ -147,9 +150,10 @@
       padding-bottom: env(safe-area-inset-bottom, 0);
       box-sizing: border-box;
       margin: 0;
-      overflow: hidden; /* window-level scroll'u kapat — tüm scroll iç container'larda */
-      overscroll-behavior: none; /* iOS rubber-band scroll'u kapat */
+      overscroll-behavior: none; /* iOS rubber-band scroll'u kapat (top bar'ı yukarı çekme yok) */
     }
+    /* MapScreen aktifken body scroll'unu kapat (paper element body'nin tek
+       çocuğu olunca bu otomatik etkili — overflow:hidden zaten paper üzerinde) */
 
     /* ===========================================================
        MOBİL RESPONSIVE — DESKTOP'I BOZMADAN MOBİLE OPTİMİZASYON
